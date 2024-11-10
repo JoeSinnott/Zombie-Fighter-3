@@ -6,9 +6,8 @@ class View(tk.Frame):
         tk.Frame.__init__(self, root)
 
         self.acceleration = 0.0007
-        self.speed = 0
-        self.character_x = 0.5
-        self.character_y = 0.5
+        self.speed = {"x": 0, "y": 0}
+        self.character_pos = {"x": 0.5, "y": 0.5}
 
 
         # Load and scale the image using Pillow
@@ -27,17 +26,18 @@ class View(tk.Frame):
     def gravity(self, event=None): # Moves the character to simulate the effects of gravity
         
         # Apply the speed and acceleration variables
-        self.speed += self.acceleration
-        self.character_y += self.speed
+        self.speed["y"] += self.acceleration
+        self.character_pos["y"] += self.speed["y"]
 
         # Stop character falling if touching bottom of screen
-        if self.character_y >= 0.88:
-            self.character_y = 0.88
-        self.character.place(relx=self.character_x, rely=self.character_y, anchor='center')
+        if self.character_pos["y"] >= 0.88:
+            self.character_pos["y"] = 0.88
+        self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
 
 
         # Call function every 10 ms
         root.after(10, self.gravity)
+
 
 if __name__ == '__main__': # Runs if this file is ran directly
     root = tk.Tk()
@@ -50,6 +50,7 @@ if __name__ == '__main__': # Runs if this file is ran directly
     # Create View instance
     view = View(root)
     view.pack(side="top", fill="both", expand=True)
+
 
     view.gravity()
 
