@@ -30,9 +30,13 @@ class View(tk.Frame):
         self.walls()
 
         self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
-
+        x = root.winfo_pointerx()
+        y = root.winfo_pointery()
+        print(x,y)
         # Call function every 10 ms
         root.after(10, self.apply_character)
+
+        
 
     def gravity(self, event=None): # Moves the character to simulate the effects of gravity
         
@@ -42,8 +46,8 @@ class View(tk.Frame):
 
     def walls(self, event=None):
         # Stop character falling if touching bottom of screen
-        if self.character_pos["y"] >= 0.88:
-            self.character_pos["y"] = 0.88
+        if self.character_pos["y"] >= 0.9:
+            self.character_pos["y"] = 0.9
 
         if self.character_pos["x"] >= 1:
             self.character_pos["x"] = 1
@@ -51,15 +55,16 @@ class View(tk.Frame):
         if self.character_pos["x"] <= 0:
             self.character_pos["x"] = 0
         
-
+    def dash(self, event=None):
+        pass
 
 
 if __name__ == '__main__': # Runs if this file is ran directly
     root = tk.Tk()
 
     # Set window dimensions
-    window_width = 900
-    window_height = 600
+    window_width = 1280
+    window_height = 720
     root.geometry(f"{window_width}x{window_height}")
 
     # Create View instance
