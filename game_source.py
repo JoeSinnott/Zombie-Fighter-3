@@ -1,5 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
+from math import sqrt
 
 class View(tk.Frame):
     def __init__(self, root):
@@ -9,6 +10,9 @@ class View(tk.Frame):
         self.acceleration = 0.0007
         self.speed = {"x": 0, "y": 0}
         self.character_pos = {"x": 0.5, "y": 0.5}
+        self.dash_count = 0
+        self.dash_cooldown = False
+
 
 
         # Load and scale the image using Pillow
@@ -30,13 +34,10 @@ class View(tk.Frame):
         self.walls()
 
         self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
-        x = root.winfo_pointerx()
-        y = root.winfo_pointery()
-        print(x,y)
+
+        print(self.dash_cooldown)
         # Call function every 10 ms
         root.after(10, self.apply_character)
-
-        
 
     def gravity(self, event=None): # Moves the character to simulate the effects of gravity
         
@@ -56,8 +57,25 @@ class View(tk.Frame):
             self.character_pos["x"] = 0
         
     def dash(self, event=None):
-        pass
-
+        # Get distance and direction between character and mouse
+        rel_x = root.winfo_pointerx()/root.winfo_screenwidth() - self.character_pos["x"]
+        rel_y = root.winfo_pointery()/root.winfo_screenheight() - self.character_pos["y"]
+        
+        mult = 0.035/(sqrt(rel_x**2 + rel_y**2)) # movement scaler 
+        
+        
+        if view.dash_cooldown == False:
+            self.speed["y"] = 0
+            if (self.dash_count < 12) and mult < 1: # Apply calculated movement if dash and dash cooldown has ended
+                self.character_pos["x"] += mult*rel_x
+                self.character_pos["y"] += mult*rel_y
+                self.dash_count += 1
+                root.after(10, self.dash)
+            else: 
+                self.dash_count = 0
+                # start dash cooldown
+                self.dash_cooldown = True
+                root.after(200, lambda: setattr(self, 'dash_cooldown', False))
 
 if __name__ == '__main__': # Runs if this file is ran directly
     root = tk.Tk()
@@ -66,11 +84,13 @@ if __name__ == '__main__': # Runs if this file is ran directly
     window_width = 1280
     window_height = 720
     root.geometry(f"{window_width}x{window_height}")
+    root.attributes('-fullscreen', True)
 
     # Create View instance
     view = View(root)
     view.pack(side="top", fill="both", expand=True)
 
+    root.bind("<Button-1>", view.dash)
 
     view.apply_character()
 
