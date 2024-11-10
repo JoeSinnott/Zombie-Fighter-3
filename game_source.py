@@ -47,8 +47,11 @@ class View(tk.Frame):
 
     def walls(self, event=None):
         # Stop character falling if touching bottom of screen
-        if self.character_pos["y"] >= 0.9:
-            self.character_pos["y"] = 0.9
+        if self.character_pos["y"] >= 0.95:
+            self.character_pos["y"] = 0.95
+
+        if self.character_pos["y"] <= 0:
+            self.character_pos["y"] = 0
 
         if self.character_pos["x"] >= 1:
             self.character_pos["x"] = 1
@@ -85,6 +88,7 @@ if __name__ == '__main__': # Runs if this file is ran directly
     window_height = 720
     root.geometry(f"{window_width}x{window_height}")
     root.attributes('-fullscreen', True)
+    root.resizable(False,False)
 
     # Create View instance
     view = View(root)
