@@ -5,6 +5,7 @@ class View(tk.Frame):
     def __init__(self, root):
         tk.Frame.__init__(self, root)
 
+        # Character variables
         self.acceleration = 0.0007
         self.speed = {"x": 0, "y": 0}
         self.character_pos = {"x": 0.5, "y": 0.5}
@@ -23,20 +24,34 @@ class View(tk.Frame):
         self.character = tk.Label(self, image=self.photo)
         self.character.pack()
 
+    def apply_character(self, event=None): # Applies all movement changes to the character
+
+        self.gravity()
+        self.walls()
+
+        self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
+
+        # Call function every 10 ms
+        root.after(10, self.apply_character)
+
     def gravity(self, event=None): # Moves the character to simulate the effects of gravity
         
         # Apply the speed and acceleration variables
         self.speed["y"] += self.acceleration
         self.character_pos["y"] += self.speed["y"]
 
+    def walls(self, event=None):
         # Stop character falling if touching bottom of screen
         if self.character_pos["y"] >= 0.88:
             self.character_pos["y"] = 0.88
-        self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
 
+        if self.character_pos["x"] >= 1:
+            self.character_pos["x"] = 1
 
-        # Call function every 10 ms
-        root.after(10, self.gravity)
+        if self.character_pos["x"] <= 0:
+            self.character_pos["x"] = 0
+        
+
 
 
 if __name__ == '__main__': # Runs if this file is ran directly
@@ -52,6 +67,6 @@ if __name__ == '__main__': # Runs if this file is ran directly
     view.pack(side="top", fill="both", expand=True)
 
 
-    view.gravity()
+    view.apply_character()
 
     root.mainloop()
