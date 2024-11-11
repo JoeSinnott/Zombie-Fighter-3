@@ -8,7 +8,7 @@ class View(tk.Frame):
 
         # Character variables
         self.acceleration = 0.0007
-        self.speed = {"x": 0, "y": 0}
+        self.character_speed = {"x": 0, "y": 0}
         self.character_pos = {"x": 0.5, "y": 0.5}
         self.dash_count = 0
         self.dash_cooldown = False
@@ -35,23 +35,27 @@ class View(tk.Frame):
 
         self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
 
-        print(self.dash_cooldown)
         # Call function every 10 ms
         root.after(10, self.apply_character)
 
     def gravity(self, event=None): # Moves the character to simulate the effects of gravity
         
-        # Apply the speed and acceleration variables
-        self.speed["y"] += self.acceleration
-        self.character_pos["y"] += self.speed["y"]
+        # Apply the character speed and acceleration variables
+        self.character_speed["y"] += self.acceleration
+        self.character_pos["y"] += self.character_speed["y"]
+        self.character_pos["x"] += self.character_speed["x"]
 
     def walls(self, event=None):
         # Stop character falling if touching bottom of screen
         if self.character_pos["y"] >= 0.95:
             self.character_pos["y"] = 0.95
+            # Halt horizontal movement when touching the floor
+            self.character_speed["x"] = 0
 
         if self.character_pos["y"] <= 0:
             self.character_pos["y"] = 0
+            # Halt vertical movement when touching the ceiling
+            self.character_speed["y"] = 0
 
         if self.character_pos["x"] >= 1:
             self.character_pos["x"] = 1
@@ -65,17 +69,22 @@ class View(tk.Frame):
         rel_y = root.winfo_pointery()/root.winfo_screenheight() - self.character_pos["y"]
         
         mult = 0.035/(sqrt(rel_x**2 + rel_y**2)) # movement scaler 
-        
+
+        if self.dash_count == 0:
+            self.dash_movement_x = mult*rel_x
+            self.dash_movement_y = mult*rel_y
         
         if view.dash_cooldown == False:
-            self.speed["y"] = 0
+            self.character_speed["y"] = 0
             if (self.dash_count < 12) and mult < 1: # Apply calculated movement if dash and dash cooldown has ended
-                self.character_pos["x"] += mult*rel_x
-                self.character_pos["y"] += mult*rel_y
+                self.character_pos["x"] += self.dash_movement_x
+                self.character_pos["y"] += self.dash_movement_y
                 self.dash_count += 1
                 root.after(10, self.dash)
             else: 
                 self.dash_count = 0
+                self.character_speed["x"] = self.dash_movement_x * 0.3
+                self.character_speed["y"] = self.dash_movement_y * 0.3
                 # start dash cooldown
                 self.dash_cooldown = True
                 root.after(200, lambda: setattr(self, 'dash_cooldown', False))
