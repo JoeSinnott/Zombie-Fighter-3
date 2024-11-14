@@ -1,6 +1,8 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from math import sqrt
+from random import randint
+from zombies import zombie
 
 class View(tk.Canvas):
     def __init__(self, root):
@@ -17,6 +19,9 @@ class View(tk.Canvas):
         self.dash_count = 0
         self.dash_cooldown = False
 
+        # Zombie list
+        self.zombies = []
+
         # Load the background image and add it to the canvas
         bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.jpg")
         new_height = int(self.height)
@@ -31,14 +36,14 @@ class View(tk.Canvas):
         new_width = int(character_image.width * 4)
         new_height = int(character_image.height * 4)
         character_image = character_image.resize((new_width, new_height), Image.NEAREST)
-        self.photo = ImageTk.PhotoImage(character_image)
+        self.character_tk_image = ImageTk.PhotoImage(character_image)
 
         # Add the character image to the canvas
         self.character = self.create_image(
             self.character_pos["x"] * self.width,
             self.character_pos["y"] * self.height,
-            image=self.photo,
-            anchor="center"
+            image=self.character_tk_image,
+            anchor=tk.S
         )
 
     def apply_character(self, event=None):
@@ -57,14 +62,25 @@ class View(tk.Canvas):
         root.after(20, self.apply_character)
 
     def gravity(self, event=None):
-        # Apply gravity
+        # Apply gravity to character
+        print(self.zombies)
         self.character_speed["y"] += self.acceleration
         self.character_pos["y"] += self.character_speed["y"]
         self.character_pos["x"] += self.character_speed["x"]
 
+        # Apply gravity to zombies
+        for zombie in self.zombies:
+            zombie.speed += self.acceleration
+            self.move(
+                zombie.image,
+                0,
+                zombie.speed * self.height
+            )
+            
+
     def walls(self, event=None):
-        if self.character_pos["y"] >= 0.843:
-            self.character_pos["y"] = 0.843
+        if self.character_pos["y"] >= 0.907:
+            self.character_pos["y"] = 0.907
             self.character_speed["x"] = 0
         if self.character_pos["y"] <= 0:
             self.character_pos["y"] = 0
@@ -73,6 +89,10 @@ class View(tk.Canvas):
             self.character_pos["x"] = 1
         if self.character_pos["x"] <= 0:
             self.character_pos["x"] = 0
+
+        for zombie in self.zombies:
+            pass
+    
 
     def dash(self, event=None):
         rel_x = root.winfo_pointerx() / root.winfo_screenwidth() - self.character_pos["x"]
@@ -97,6 +117,13 @@ class View(tk.Canvas):
                 self.dash_cooldown = True
                 root.after(200, lambda: setattr(self, 'dash_cooldown', False))
 
+    def spawn_zombie(self, event=None):
+        # Add the zombie object to the zombie list
+        self.zombies.append(zombie(self))
+
+        root.after(2000, self.spawn_zombie)
+
+
 if __name__ == '__main__':
     root = tk.Tk()
     root.geometry("1920x1080")
@@ -107,6 +134,10 @@ if __name__ == '__main__':
     view = View(root)
 
     root.bind("<Button-1>", view.dash)
+
+    view.spawn_zombie()
+
+
     view.apply_character()
 
     root.mainloop()
