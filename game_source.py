@@ -2,9 +2,13 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from math import sqrt
 
-class View(tk.Frame):
+class View(tk.Canvas):
     def __init__(self, root):
-        tk.Frame.__init__(self, root)
+        tk.Canvas.__init__(self, root, width=1920, height=1080)
+        self.pack()
+        
+        self.height = self.winfo_screenheight()
+        self.width = self.winfo_screenwidth()
 
         # Character variables
         self.acceleration = 0.0007
@@ -13,105 +17,96 @@ class View(tk.Frame):
         self.dash_count = 0
         self.dash_cooldown = False
 
-        # Load and scale the bg image using pillow
+        # Load the background image and add it to the canvas
         bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.jpg")
-        new_height = int(self.winfo_screenheight())
+        new_height = int(self.height)
         new_width = int(bg_image.width * (new_height/bg_image.height))
         bg_image = bg_image.resize((new_width,new_height), Image.NEAREST)
-        self.bg_label_image = ImageTk.PhotoImage(bg_image)
+        self.bg_tk_image = ImageTk.PhotoImage(bg_image)
+        self.create_image(0, 0, anchor="nw", image=self.bg_tk_image)
 
-        # Create a Label widget to hold the background image
-        background_label = tk.Label(self, image=self.bg_label_image)
-        background_label.place(relwidth=1, relheight=1)
-
-        # Load and scale the character image using Pillow
+        # Load and scale the character image
         character_image = Image.open("comp16321-labs_y46354js/images/test.png")
+        character_image = character_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(character_image.width * 4)
         new_height = int(character_image.height * 4)
         character_image = character_image.resize((new_width, new_height), Image.NEAREST)
         self.photo = ImageTk.PhotoImage(character_image)
 
-        # Create a label to hold the scaled image
-        self.character = tk.Label(self, image=self.photo)
-        self.character.pack()
+        # Add the character image to the canvas
+        self.character = self.create_image(
+            self.character_pos["x"] * self.width,
+            self.character_pos["y"] * self.height,
+            image=self.photo,
+            anchor="center"
+        )
 
-    def apply_character(self, event=None): # Applies all movement changes to the character
-
+    def apply_character(self, event=None):
+        # Update character position with gravity and wall constraints
         self.gravity()
         self.walls()
 
-        self.character.place(relx=self.character_pos["x"], rely=self.character_pos["y"], anchor='center')
+        # Update character position on canvas
+        self.coords(
+            self.character,
+            self.character_pos["x"] * self.width,
+            self.character_pos["y"] * self.height
+        )
 
-        # Call function every 10 ms
-        root.after(16, self.apply_character)
+        # Call function every 20 ms (adjust if necessary)
+        root.after(20, self.apply_character)
 
-    def gravity(self, event=None): # Moves the character to simulate the effects of gravity
-        
-        # Apply the character speed and acceleration variables
+    def gravity(self, event=None):
+        # Apply gravity
         self.character_speed["y"] += self.acceleration
         self.character_pos["y"] += self.character_speed["y"]
         self.character_pos["x"] += self.character_speed["x"]
 
     def walls(self, event=None):
-        # Stop character falling if touching bottom of screen
-        if self.character_pos["y"] >= 0.94:
-            self.character_pos["y"] = 0.94
-            # Halt horizontal movement when touching the floor
+        if self.character_pos["y"] >= 0.843:
+            self.character_pos["y"] = 0.843
             self.character_speed["x"] = 0
-
         if self.character_pos["y"] <= 0:
             self.character_pos["y"] = 0
-            # Halt vertical movement when touching the ceiling
             self.character_speed["y"] = 0
-
         if self.character_pos["x"] >= 1:
             self.character_pos["x"] = 1
-
         if self.character_pos["x"] <= 0:
             self.character_pos["x"] = 0
-        
-    def dash(self, event=None):
-        # Get distance and direction between character and mouse
-        rel_x = root.winfo_pointerx()/root.winfo_screenwidth() - self.character_pos["x"]
-        rel_y = root.winfo_pointery()/root.winfo_screenheight() - self.character_pos["y"]
-        
-        mult = 0.035/(sqrt(rel_x**2 + rel_y**2)) # movement scaler 
 
+    def dash(self, event=None):
+        rel_x = root.winfo_pointerx() / root.winfo_screenwidth() - self.character_pos["x"]
+        rel_y = root.winfo_pointery() / root.winfo_screenheight() - self.character_pos["y"]
+
+        mult = 0.035 / (sqrt(rel_x ** 2 + rel_y ** 2))
         if self.dash_count == 0:
-            self.dash_movement_x = mult*rel_x
-            self.dash_movement_y = mult*rel_y
-        
-        if view.dash_cooldown == False:
+            self.dash_movement_x = mult * rel_x
+            self.dash_movement_y = mult * rel_y
+
+        if self.dash_cooldown == False:
             self.character_speed["y"] = 0
-            if (self.dash_count < 12) and mult < 1: # Apply calculated movement if dash and dash cooldown has ended
+            if (self.dash_count < 12) and mult < 1:
                 self.character_pos["x"] += self.dash_movement_x
                 self.character_pos["y"] += self.dash_movement_y
                 self.dash_count += 1
                 root.after(10, self.dash)
-            else: 
+            else:
                 self.dash_count = 0
                 self.character_speed["x"] = self.dash_movement_x * 0.3
                 self.character_speed["y"] = self.dash_movement_y * 0.3
-                # start dash cooldown
                 self.dash_cooldown = True
                 root.after(200, lambda: setattr(self, 'dash_cooldown', False))
 
-if __name__ == '__main__': # Runs if this file is ran directly
+if __name__ == '__main__':
     root = tk.Tk()
-
-    # Set window dimensions
-    window_width = 396
-    window_height = 181
-    root.geometry(f"{window_width}x{window_height}")
+    root.geometry("1920x1080")
     root.attributes('-fullscreen', True)
-    root.resizable(False,False)
+    root.resizable(False, False)
 
-    # Create View instance
+    # Create the View instance using Canvas
     view = View(root)
-    view.pack(side="top", fill="both", expand=True)
 
     root.bind("<Button-1>", view.dash)
-
     view.apply_character()
 
     root.mainloop()
