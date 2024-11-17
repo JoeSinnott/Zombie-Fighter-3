@@ -4,7 +4,7 @@ from random import randint
 
 class zombie:
     def __init__(self, canvas):
-
+        self.canvas = canvas
         # Load and scale the zombie image
         zombie_image = Image.open("comp16321-labs_y46354js/images/zombie_img.png")
         zombie_image = zombie_image.convert("RGBA")  # Ensure transparency is preserved
@@ -18,9 +18,9 @@ class zombie:
         self.x = randint(5,95)/100
         self.y = -0.1
 
-        self.image = canvas.create_image(
-            self.x * canvas.width,
-            self.y * canvas.height,
+        self.image = self.canvas.create_image(
+            self.x * self.canvas.width,
+            self.y * self.canvas.height,
             image=self.zombie_tk_image,
             anchor=tk.S
         )
@@ -29,3 +29,4 @@ class zombie:
             self.speed_x = -0.001
         else:
             self.speed_x = 0.001
+    

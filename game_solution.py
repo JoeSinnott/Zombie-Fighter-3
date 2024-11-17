@@ -18,6 +18,7 @@ class View(tk.Canvas):
         self.dash_count = 0
         self.dash_cooldown = False
         self.dashing = False
+        self.rebound = 1
 
         # Zombie list
         self.zombies = []
@@ -47,7 +48,8 @@ class View(tk.Canvas):
         )
 
     def test(self):
-        print(self.dashing)
+        # print()
+        pass
 
     def game_loop(self, event=None):
         # Update character position with gravity and wall constraints
@@ -72,8 +74,11 @@ class View(tk.Canvas):
 
         # Test Function (prints stuff to check if working)
         self.test()
-        
-        # Call function every 20 ms (adjust if necessary)
+
+        if self.dashing: # Check for zombie collisions only if dashing
+            self.zom_collision()
+
+        # Call function every 20 ms
         root.after(20, self.game_loop)
 
     def gravity(self, event=None):
@@ -91,15 +96,15 @@ class View(tk.Canvas):
             
 
     def walls(self, event=None):
-        if self.character_pos["y"] >= 0.907:
+        if self.character_pos["y"] >= 0.907: # If character touches the ground
             self.character_pos["y"] = 0.907
             self.character_speed["x"] = 0
-        if self.character_pos["y"] <= 0:
+        if self.character_pos["y"] <= 0:     # If character touches the ceiling
             self.character_pos["y"] = 0
             self.character_speed["y"] = 0
-        if self.character_pos["x"] >= 1:
+        if self.character_pos["x"] >= 1:     # If character touches the right wall
             self.character_pos["x"] = 1
-        if self.character_pos["x"] <= 0:
+        if self.character_pos["x"] <= 0:     # If character touches the left wall
             self.character_pos["x"] = 0
 
         for zombie in self.zombies:
@@ -128,16 +133,33 @@ class View(tk.Canvas):
             else:
                 self.dashing = False
                 self.dash_count = 0
-                self.character_speed["x"] = self.dash_movement_x * 0.3
-                self.character_speed["y"] = self.dash_movement_y * 0.3
+                self.character_speed["x"] = self.dash_movement_x * 0.3 * self.rebound
+                self.character_speed["y"] = self.dash_movement_y * 0.3 * self.rebound
                 self.dash_cooldown = True
-                root.after(500, lambda: setattr(self, 'dash_cooldown', False))
+                self.rebound = 1
+                root.after(250, lambda: setattr(self, 'dash_cooldown', False))
 
     def spawn_zombie(self, event=None):
         # Add the zombie object to the zombie list
         self.zombies.append(zombie(self))
 
-        root.after(2000, self.spawn_zombie)
+        root.after(500, self.spawn_zombie)
+    
+    def zom_collision(self):
+
+        char_bbox = self.bbox(self.character)
+
+        for zombie in self.zombies:
+            zom_bbox = self.bbox(zombie.image)
+            if not (zom_bbox[2] < char_bbox[0] or   # zombie is to the left of character
+                    zom_bbox[0] > char_bbox[2] or   # zombie is to the right of character
+                    zom_bbox[3] < char_bbox[1] or   # zombie is above character
+                    zom_bbox[1] > char_bbox[3]):    # zombie is below character
+                self.zombies.remove(zombie)
+                self.dash_movement_x = self.dash_movement_x * 0.7
+                self.dash_movement_y = self.dash_movement_y * 0.7
+
+
 
 
 if __name__ == '__main__':
