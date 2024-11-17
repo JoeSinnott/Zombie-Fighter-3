@@ -17,6 +17,7 @@ class View(tk.Canvas):
         self.character_pos = {"x": 0.5, "y": 0.5}
         self.dash_count = 0
         self.dash_cooldown = False
+        self.dashing = False
 
         # Zombie list
         self.zombies = []
@@ -45,7 +46,10 @@ class View(tk.Canvas):
             anchor=tk.S
         )
 
-    def apply_character(self, event=None):
+    def test(self):
+        print(self.dashing)
+
+    def game_loop(self, event=None):
         # Update character position with gravity and wall constraints
         self.gravity()
         self.walls()
@@ -66,8 +70,11 @@ class View(tk.Canvas):
                 zombie.y * self.height
             )
 
+        # Test Function (prints stuff to check if working)
+        self.test()
+        
         # Call function every 20 ms (adjust if necessary)
-        root.after(20, self.apply_character)
+        root.after(20, self.game_loop)
 
     def gravity(self, event=None):
         # Apply gravity to character
@@ -111,6 +118,7 @@ class View(tk.Canvas):
             self.dash_movement_y = mult * rel_y
 
         if self.dash_cooldown == False:
+            self.dashing = True
             self.character_speed["y"] = 0
             if (self.dash_count < 12) and mult < 1:
                 self.character_pos["x"] += self.dash_movement_x
@@ -118,6 +126,7 @@ class View(tk.Canvas):
                 self.dash_count += 1
                 root.after(10, self.dash)
             else:
+                self.dashing = False
                 self.dash_count = 0
                 self.character_speed["x"] = self.dash_movement_x * 0.3
                 self.character_speed["y"] = self.dash_movement_y * 0.3
@@ -145,6 +154,6 @@ if __name__ == '__main__':
     view.spawn_zombie()
 
 
-    view.apply_character()
+    view.game_loop()
 
     root.mainloop()
