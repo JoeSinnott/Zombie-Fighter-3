@@ -1,7 +1,7 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from math import sqrt
-from zombies import zombie
+from monsters import zombie, demon
 
 class View(tk.Canvas):
     def __init__(self, root, width=1920, height=1080):
@@ -20,8 +20,9 @@ class View(tk.Canvas):
         self.dashing = False
         self.rebound = 1
 
-        # Zombie list
+        # Zombie and demon lists
         self.zombies = []
+        self.demons = []
 
         # Load the background image and add it to the canvas
         bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.jpg")
@@ -52,10 +53,6 @@ class View(tk.Canvas):
         pass
 
     def game_loop(self, event=None):
-        # Update character position with gravity and wall constraints
-        self.gravity()
-        self.walls()
-
         # Update character position on canvas
         self.coords(
             self.character,
@@ -63,20 +60,25 @@ class View(tk.Canvas):
             self.character_pos["y"] * self.height
         )
 
-        # Update the zombie position on the canvas
-        for zombie in self.zombies:
-            zombie.movement()
+        # Update the monsters' position on the canvas
+        for monster in self.zombies + self.demons:
+            monster.movement()
             self.coords(
-                zombie.image,
-                zombie.x * self.width,
-                zombie.y * self.height
+                monster.image,
+                monster.x * self.width,
+                monster.y * self.height
             )
+
+
+        # Update character position with gravity and wall constraints
+        self.gravity()
+        self.walls()
 
         # Test Function (prints stuff to check if working)
         self.test()
 
         if self.dashing: # Check for zombie collisions only if dashing
-            self.zom_collision()
+            self.mon_collision()
 
         # Call function every 20 ms
         root.after(20, self.game_loop)
@@ -92,6 +94,7 @@ class View(tk.Canvas):
             zombie.speed_y += self.acceleration
             zombie.x += zombie.speed_x
             zombie.y += zombie.speed_y
+            
 
             
 
@@ -106,10 +109,7 @@ class View(tk.Canvas):
             self.character_pos["x"] = 1
         if self.character_pos["x"] <= 0:     # If character touches the left wall
             self.character_pos["x"] = 0
-
-        for zombie in self.zombies:
-            if zombie.y >= 0.905:
-                zombie.y = 0.905
+            
 
     
 
@@ -133,19 +133,24 @@ class View(tk.Canvas):
             else:
                 self.dashing = False
                 self.dash_count = 0
-                self.character_speed["x"] = self.dash_movement_x * 0.3 * self.rebound
-                self.character_speed["y"] = self.dash_movement_y * 0.3 * self.rebound
+                self.character_speed["x"] = self.dash_movement_x * 0.3
+                self.character_speed["y"] = self.dash_movement_y * 0.3
                 self.dash_cooldown = True
-                self.rebound = 1
                 root.after(250, lambda: setattr(self, 'dash_cooldown', False))
 
     def spawn_zombie(self, event=None):
         # Add the zombie object to the zombie list
         self.zombies.append(zombie(self))
 
-        root.after(500, self.spawn_zombie)
+        root.after(1500, self.spawn_zombie)
+
+    def spawn_demon(self,event=None):
+        # Add the demon object to the zombie list
+        self.demons.append(demon(self))
+
+        root.after(2500, self.spawn_demon)
     
-    def zom_collision(self):
+    def mon_collision(self):
 
         char_bbox = self.bbox(self.character)
 
@@ -156,8 +161,18 @@ class View(tk.Canvas):
                     zom_bbox[3] < char_bbox[1] or   # zombie is above character
                     zom_bbox[1] > char_bbox[3]):    # zombie is below character
                 self.zombies.remove(zombie)
-                self.dash_movement_x = self.dash_movement_x * 0.7
-                self.dash_movement_y = self.dash_movement_y * 0.7
+                self.dash_movement_x = self.dash_movement_x * 0.3
+                self.dash_movement_y = self.dash_movement_y * 0.3
+
+        for demon in self.demons:
+            dem_bbox = self.bbox(demon.image)
+            if not (dem_bbox[2] < char_bbox[0] or   # demon is to the left of character
+                    dem_bbox[0] > char_bbox[2] or   # demon is to the right of character
+                    dem_bbox[3] < char_bbox[1] or   # demon is above character
+                    dem_bbox[1] > char_bbox[3]):    # demon is below character
+                self.demons.remove(demon)
+                self.dash_movement_x = self.dash_movement_x * 0.4
+                self.dash_movement_y = self.dash_movement_y * 0.4
 
 
 
@@ -174,7 +189,7 @@ if __name__ == '__main__':
     root.bind("<Button-1>", view.dash)
 
     view.spawn_zombie()
-
+    view.spawn_demon()
 
     view.game_loop()
 
