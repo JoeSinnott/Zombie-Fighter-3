@@ -6,21 +6,14 @@ from entities import zombie, demon, character
 class View(tk.Canvas):
     def __init__(self, root, width=1920, height=1080):
         super().__init__(root, width=width, height=height)
-        self.pack()
         
         self.height = height
         self.width = width
 
+        root.bind("<Button-1>", self.dash)
+        root.bind("<Escape>", self.pause)
+
         self.paused = False
-
-        # # Character variables
-        # self.acceleration = 0.0007
-        # self.character_speed = {"x": 0, "y": 0}
-        # self.character_pos = {"x": 0.5, "y": 0.5}
-        # self.dash_count = 0
-        # self.dash_cooldown = False
-        # self.dashing = False
-
 
         # Zombie and demon lists
         self.zombies = []
@@ -37,21 +30,6 @@ class View(tk.Canvas):
         # instantiate character class
         self.character = character(self)
 
-        # # Load and scale the character image
-        # character_image = Image.open("comp16321-labs_y46354js/images/test.png")
-        # character_image = character_image.convert("RGBA")  # Ensure transparency is preserved
-        # new_width = int(character_image.width * 4)
-        # new_height = int(character_image.height * 4)
-        # character_image = character_image.resize((new_width, new_height), Image.NEAREST)
-        # self.character_tk_image = ImageTk.PhotoImage(character_image)
-
-        # # Add the character image to the canvas
-        # self.character = self.create_image(
-        #     self.character_pos["x"] * self.width,
-        #     self.character_pos["y"] * self.height,
-        #     image=self.character_tk_image,
-        #     anchor=tk.S
-        # )
 
     def test(self):
         # print()
@@ -63,7 +41,6 @@ class View(tk.Canvas):
             set_up()
 
     def game_loop(self, event=None):
-        print("I ran!!")
         # Update character position on canvas
         self.coords(
             self.character.image,
@@ -156,12 +133,70 @@ class View(tk.Canvas):
                     dem_bbox[1] > char_bbox[3]):    # demon is below character
                 self.demons.remove(demon)
 
+class Menu(tk.Canvas):
+    def __init__(self, root, width=1920, height=1080):
+        super().__init__(root, width=width, height=height)
+        
+        self.height = height
+        self.width = width
+
+        # Load the background image and add it to the canvas
+        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.jpg")
+        new_height = int(self.height)
+        new_width = int(bg_image.width * (new_height/bg_image.height))
+        bg_image = bg_image.resize((new_width,new_height), Image.NEAREST)
+        self.bg_tk_image = ImageTk.PhotoImage(bg_image)
+        self.create_image(0, 0, anchor="nw", image=self.bg_tk_image)
+
+        logo_image = Image.open("comp16321-labs_y46354js/images/game_logo.png")
+        new_height = int(logo_image.width * 6)
+        new_width = int(logo_image.width * 6)
+        logo_image = logo_image.resize((new_width,new_height), Image.NEAREST)
+        self.logo_tk_image = ImageTk.PhotoImage(logo_image)
+        self.create_image(self.width*0.5, self.height*-0.05, anchor=tk.N, image=self.logo_tk_image)
+
+        self.create_buttons()
+
+    def create_buttons(self):
+        # Define button properties
+        button_width, button_height = 200, 80
+        button_x, button_y = self.width // 2, self.height // 2
+
+        # Create a red rectangle
+        self.create_rectangle(
+            button_x - button_width // 2, button_y - button_height // 2,
+            button_x + button_width // 2, button_y + button_height // 2,
+            fill="red", outline="black"
+        )
+
+        # Bind the button area to the action
+        self.tag_bind("button", "<Button-1>", lambda event: self.play())
+
+        # Mark the rectangle and text as part of the button
+        self.create_rectangle(
+            button_x - button_width // 2, button_y - button_height // 2,
+            button_x + button_width // 2, button_y + button_height // 2,
+            tags="button",  # Assign a tag to group the button elements
+            fill="red", outline="black", width=7
+        )
+
+        # Add pixelated text
+        self.create_text(
+            button_x, button_y,
+            text="PLAY", font=("Terminal", 20, "bold"), fill="white"
+        )
+
+    def play(self):
+        view.pack()
+        set_up()
+        self.pack_forget()
 
 def set_up():
     view.spawn_zombie()
     view.spawn_demon()
 
     view.game_loop()
+
 
 if __name__ == '__main__':
     root = tk.Tk()
@@ -171,10 +206,8 @@ if __name__ == '__main__':
 
     # Create the View instance using Canvas
     view = View(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
-
-    root.bind("<Button-1>", view.dash)
-    root.bind("<Escape>", view.pause)
-
-    set_up()
+    
+    menu = Menu(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
+    menu.pack()
 
     root.mainloop()
