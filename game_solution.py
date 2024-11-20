@@ -1,7 +1,7 @@
 import tkinter as tk
 from PIL import Image, ImageTk
-from math import sqrt
-from entities import zombie, demon, character
+
+from entities import zombie, demon, character, capybara
 
 class View(tk.Canvas):
     def __init__(self, root, width=1920, height=1080):
@@ -19,26 +19,40 @@ class View(tk.Canvas):
         self.zombies = []
         self.demons = []
 
+        # Load and scale the game_over image
+        game_over_image = Image.open("comp16321-labs_y46354js/images/game_over.png")
+        game_over_image = game_over_image.convert("RGBA")  # Ensure transparency is preserved
+        new_width = int(game_over_image.width * 16)
+        new_height = int(game_over_image.height * 16)
+        game_over_image = game_over_image.resize((new_width, new_height), Image.NEAREST)
+        self.game_over_tk_image = ImageTk.PhotoImage(game_over_image)
+
         # Load the background image and add it to the canvas
-        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.jpg")
+        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.png")
         new_height = int(self.height)
         new_width = int(bg_image.width * (new_height/bg_image.height))
         bg_image = bg_image.resize((new_width,new_height), Image.NEAREST)
         self.bg_tk_image = ImageTk.PhotoImage(bg_image)
         self.create_image(0, 0, anchor="nw", image=self.bg_tk_image)
 
-        # instantiate character class
+        # instantiate character and capybara class
+        self.capy = capybara(self)
         self.character = character(self)
 
 
     def test(self):
-        # print()
         pass
+
+    def set_up(self):
+        self.spawn_zombie()
+        self.spawn_demon()
+
+        self.game_loop()
 
     def pause(self, event=None):
         self.paused = not self.paused
         if not self.paused:
-            set_up()
+            self.set_up()
 
     def game_loop(self, event=None):
         # Update character position on canvas
@@ -67,10 +81,34 @@ class View(tk.Canvas):
 
         if self.character.dashing: # Check for zombie collisions only if dashing
             self.mon_collision()
+        
+        self.capy_collision()
+
+        if self.capy.health == 0 :
+            self.game_over()
 
         # Call function every 20 ms
         if not self.paused:
             root.after(20, self.game_loop)
+
+    def game_over(self):
+        self.paused = True
+        root.unbind("<Button-1>")
+        root.unbind("<Escape>")
+
+        self.game_over_image = self.create_image(
+            0.5 * self.width,
+            0.5 * self.height,
+            image=self.game_over_tk_image,
+            anchor=tk.CENTER
+        )
+
+        root.after(5000, self.to_menu)
+        
+    def to_menu(self):
+        self.pack_forget()
+        menu.pack()
+        menu.update_idletasks()
 
     def gravity(self, event=None):
         # Apply gravity to character
@@ -84,7 +122,6 @@ class View(tk.Canvas):
             zombie.x += zombie.speed_x
             zombie.y += zombie.speed_y
                
-
     def walls(self, event=None):
         if self.character.y >= 0.907: # If character touches the ground
             self.character.y = 0.907
@@ -96,7 +133,6 @@ class View(tk.Canvas):
             self.character.x = 1
         if self.character.x <= 0:     # If character touches the left wall
             self.character.x = 0
-            
 
     def dash(self, event=None):
         self.character.dash()
@@ -133,6 +169,29 @@ class View(tk.Canvas):
                     dem_bbox[1] > char_bbox[3]):    # demon is below character
                 self.demons.remove(demon)
 
+    def capy_collision(self):
+
+        capy_bbox = self.bbox(self.capy.image)
+
+        for zombie in self.zombies:
+            zom_bbox = self.bbox(zombie.image)
+            if not (zom_bbox[2] < capy_bbox[0] or   # zombie is to the left of capybara
+                    zom_bbox[0] > capy_bbox[2] or   # zombie is to the right of capybara
+                    zom_bbox[3] < capy_bbox[1] or   # zombie is above capybara
+                    zom_bbox[1] > capy_bbox[3]):    # zombie is below capybara
+                self.zombies.remove(zombie)
+                self.capy.health -= 1
+
+        for demon in self.demons:
+            dem_bbox = self.bbox(demon.image)
+            if not (dem_bbox[2] < capy_bbox[0] or   # demon is to the left of capybara
+                    dem_bbox[0] > capy_bbox[2] or   # demon is to the right of capybara
+                    dem_bbox[3] < capy_bbox[1] or   # demon is above capybara
+                    dem_bbox[1] > capy_bbox[3]):    # demon is below capybara
+                self.demons.remove(demon)
+                self.capy.health -= 1
+
+
 class Menu(tk.Canvas):
     def __init__(self, root, width=1920, height=1080):
         super().__init__(root, width=width, height=height)
@@ -141,7 +200,7 @@ class Menu(tk.Canvas):
         self.width = width
 
         # Load the background image and add it to the canvas
-        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.jpg")
+        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.png")
         new_height = int(self.height)
         new_width = int(bg_image.width * (new_height/bg_image.height))
         bg_image = bg_image.resize((new_width,new_height), Image.NEAREST)
@@ -153,21 +212,14 @@ class Menu(tk.Canvas):
         new_width = int(logo_image.width * 6)
         logo_image = logo_image.resize((new_width,new_height), Image.NEAREST)
         self.logo_tk_image = ImageTk.PhotoImage(logo_image)
-        self.create_image(self.width*0.5, self.height*-0.05, anchor=tk.N, image=self.logo_tk_image)
+        self.create_image(self.width*0.5, 0, anchor=tk.N, image=self.logo_tk_image)
 
         self.create_buttons()
 
     def create_buttons(self):
         # Define button properties
         button_width, button_height = 200, 80
-        button_x, button_y = self.width // 2, self.height // 2
-
-        # Create a red rectangle
-        self.create_rectangle(
-            button_x - button_width // 2, button_y - button_height // 2,
-            button_x + button_width // 2, button_y + button_height // 2,
-            fill="red", outline="black"
-        )
+        button_x, button_y = self.width // 2, round(0.6*self.height)
 
         # Bind the button area to the action
         self.tag_bind("button", "<Button-1>", lambda event: self.play())
@@ -187,25 +239,21 @@ class Menu(tk.Canvas):
         )
 
     def play(self):
+        # Create the View instance
+        global view
+        view = View(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
         view.pack()
-        set_up()
+        view.set_up()
         self.pack_forget()
-
-def set_up():
-    view.spawn_zombie()
-    view.spawn_demon()
-
-    view.game_loop()
 
 
 if __name__ == '__main__':
+    view = None
+
     root = tk.Tk()
     root.geometry(f"{root.winfo_screenwidth()}x{root.winfo_screenheight()}")
     root.attributes('-fullscreen', True)
     root.resizable(False, False)
-
-    # Create the View instance using Canvas
-    view = View(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
     
     menu = Menu(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
     menu.pack()

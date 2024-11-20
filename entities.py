@@ -1,13 +1,16 @@
+"""Contains the classes for all of the entities within the game."""
+
 import tkinter as tk
 from PIL import Image, ImageTk
 from random import randint
 from math import sqrt
 
+
 class zombie:
     def __init__(self, canvas):
         self.canvas = canvas
         # Load and scale the zombie image
-        zombie_image = Image.open("comp16321-labs_y46354js/images/zombie_img.png")
+        zombie_image = Image.open("comp16321-labs_y46354js/images/zombie.png")
         zombie_image = zombie_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(zombie_image.width * 5)
         new_height = int(zombie_image.height * 5)
@@ -35,8 +38,8 @@ class zombie:
         self.x += self.speed_x
         self.y += self.speed_y
 
-        if self.y >= 0.905:
-                self.y = 0.905
+        if self.y >= 0.907:
+                self.y = 0.907
 
 
 class demon:
@@ -93,13 +96,13 @@ class character:
         self.speed_x = 0
         self.speed_y = 0
         self.x = 0.5
-        self.y = 0.5
+        self.y = -0.4
         self.dash_count = 0
         self.dash_cooldown = False
         self.dashing = False
 
         # Load and scale the character image
-        character_image = Image.open("comp16321-labs_y46354js/images/test.png")
+        character_image = Image.open("comp16321-labs_y46354js/images/character.png")
         character_image = character_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(character_image.width * 4)
         new_height = int(character_image.height * 4)
@@ -115,6 +118,7 @@ class character:
         )
 
     def dash(self):
+        """Moves the character towards the mouse with a dashing motion."""
         # Get relative mouse position
         rel_x = self.canvas.winfo_pointerx() / self.canvas.winfo_screenwidth() - self.x
         rel_y = self.canvas.winfo_pointery() / self.canvas.winfo_screenheight() - self.y
@@ -140,3 +144,26 @@ class character:
                 self.speed_y = self.dash_movement_y * 0.3
                 self.dash_cooldown = True
                 self.canvas.after(250, lambda: setattr(self, 'dash_cooldown', False))
+
+
+class capybara:
+    def __init__(self, canvas):
+        self.canvas = canvas
+        # Load and scale the capybara image
+        capy_image = Image.open("comp16321-labs_y46354js/images/capy.png")
+        capy_image = capy_image.convert("RGBA")  # Ensure transparency is preserved
+        new_width = int(capy_image.width * 4)
+        new_height = int(capy_image.height * 4)
+        capy_image = capy_image.resize((new_width, new_height), Image.NEAREST)
+        self.capy_tk_image = ImageTk.PhotoImage(capy_image)
+
+        self.image = self.canvas.create_image(
+            0.5 * self.canvas.width,
+            0.907 * self.canvas.height,
+            image=self.capy_tk_image,
+            anchor=tk.S
+        )
+
+        self.health = 10
+
+    
