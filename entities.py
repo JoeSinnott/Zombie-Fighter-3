@@ -85,3 +85,5 @@ class demon:
 
         self.x += self.speed_x
         self.y += self.speed_y
+
+

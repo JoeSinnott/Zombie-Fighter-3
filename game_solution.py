@@ -11,6 +11,8 @@ class View(tk.Canvas):
         self.height = height
         self.width = width
 
+        self.paused = False
+
         # Character variables
         self.acceleration = 0.0007
         self.character_speed = {"x": 0, "y": 0}
@@ -52,6 +54,11 @@ class View(tk.Canvas):
         # print()
         pass
 
+    def pause(self, event=None):
+        self.paused = not self.paused
+        if not self.paused:
+            set_up()
+
     def game_loop(self, event=None):
         # Update character position on canvas
         self.coords(
@@ -81,7 +88,8 @@ class View(tk.Canvas):
             self.mon_collision()
 
         # Call function every 20 ms
-        root.after(20, self.game_loop)
+        if not self.paused:
+            root.after(20, self.game_loop)
 
     def gravity(self, event=None):
         # Apply gravity to character
@@ -127,7 +135,8 @@ class View(tk.Canvas):
                 self.character_pos["x"] += self.dash_movement_x
                 self.character_pos["y"] += self.dash_movement_y
                 self.dash_count += 1
-                root.after(10, self.dash)
+                if not self.paused:
+                    root.after(10, self.dash)
             else:
                 self.dashing = False
                 self.dash_count = 0
@@ -138,15 +147,15 @@ class View(tk.Canvas):
 
     def spawn_zombie(self, event=None):
         # Add the zombie object to the zombie list
-        self.zombies.append(zombie(self))
-
-        root.after(1500, self.spawn_zombie)
+        if not self.paused:
+            self.zombies.append(zombie(self))
+            root.after(1500, self.spawn_zombie)
 
     def spawn_demon(self,event=None):
         # Add the demon object to the zombie list
-        self.demons.append(demon(self))
-
-        root.after(2500, self.spawn_demon)
+        if not self.paused:
+            self.demons.append(demon(self))
+            root.after(2500, self.spawn_demon)
     
     def mon_collision(self):
 
@@ -169,7 +178,11 @@ class View(tk.Canvas):
                 self.demons.remove(demon)
 
 
+def set_up():
+    view.spawn_zombie()
+    view.spawn_demon()
 
+    view.game_loop()
 
 if __name__ == '__main__':
     root = tk.Tk()
@@ -181,10 +194,8 @@ if __name__ == '__main__':
     view = View(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
 
     root.bind("<Button-1>", view.dash)
+    root.bind("<Escape>", view.pause)
 
-    view.spawn_zombie()
-    view.spawn_demon()
-
-    view.game_loop()
+    set_up()
 
     root.mainloop()
