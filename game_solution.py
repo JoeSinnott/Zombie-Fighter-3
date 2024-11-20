@@ -94,9 +94,7 @@ class View(tk.Canvas):
             zombie.speed_y += self.acceleration
             zombie.x += zombie.speed_x
             zombie.y += zombie.speed_y
-            
-
-            
+               
 
     def walls(self, event=None):
         if self.character_pos["y"] >= 0.907: # If character touches the ground
@@ -161,8 +159,6 @@ class View(tk.Canvas):
                     zom_bbox[3] < char_bbox[1] or   # zombie is above character
                     zom_bbox[1] > char_bbox[3]):    # zombie is below character
                 self.zombies.remove(zombie)
-                self.dash_movement_x = self.dash_movement_x * 0.3
-                self.dash_movement_y = self.dash_movement_y * 0.3
 
         for demon in self.demons:
             dem_bbox = self.bbox(demon.image)
@@ -171,8 +167,6 @@ class View(tk.Canvas):
                     dem_bbox[3] < char_bbox[1] or   # demon is above character
                     dem_bbox[1] > char_bbox[3]):    # demon is below character
                 self.demons.remove(demon)
-                self.dash_movement_x = self.dash_movement_x * 0.4
-                self.dash_movement_y = self.dash_movement_y * 0.4
 
 
 
