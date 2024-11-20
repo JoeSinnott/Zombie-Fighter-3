@@ -65,8 +65,6 @@ class demon:
             else:
                 self.x += 0.1
 
-        # self.x = randint(0,100)/100
-        # self.y = 0
 
         self.rel_x = 0.5 - self.x
         self.rel_y = 0.9 - self.y
@@ -87,3 +85,58 @@ class demon:
         self.y += self.speed_y
 
 
+class character:
+    def __init__(self, canvas):
+        self.canvas = canvas
+        # create character variables
+        self.acceleration = 0.0007
+        self.speed_x = 0
+        self.speed_y = 0
+        self.x = 0.5
+        self.y = 0.5
+        self.dash_count = 0
+        self.dash_cooldown = False
+        self.dashing = False
+
+        # Load and scale the character image
+        character_image = Image.open("comp16321-labs_y46354js/images/test.png")
+        character_image = character_image.convert("RGBA")  # Ensure transparency is preserved
+        new_width = int(character_image.width * 4)
+        new_height = int(character_image.height * 4)
+        character_image = character_image.resize((new_width, new_height), Image.NEAREST)
+        self.character_tk_image = ImageTk.PhotoImage(character_image) 
+
+        # Add the character image to the canvas
+        self.image = self.canvas.create_image(
+            self.x * self.canvas.width,
+            self.y * self.canvas.height,
+            image=self.character_tk_image,
+            anchor=tk.S
+        )
+
+    def dash(self):
+        # Get relative mouse position
+        rel_x = self.canvas.winfo_pointerx() / self.canvas.winfo_screenwidth() - self.x
+        rel_y = self.canvas.winfo_pointery() / self.canvas.winfo_screenheight() - self.y
+
+        mult = 0.035 / (sqrt(rel_x ** 2 + rel_y ** 2))
+
+        if self.dash_count == 0:
+            self.dash_movement_x = mult * rel_x
+            self.dash_movement_y = mult * rel_y
+
+        if not self.dash_cooldown:
+            self.dashing = True
+            self.speed_y = 0
+            if self.dash_count < 12 and mult < 1:
+                self.x += self.dash_movement_x
+                self.y += self.dash_movement_y
+                self.dash_count += 1
+                self.canvas.after(10, self.dash)
+            else:
+                self.dashing = False
+                self.dash_count = 0
+                self.speed_x = self.dash_movement_x * 0.3
+                self.speed_y = self.dash_movement_y * 0.3
+                self.dash_cooldown = True
+                self.canvas.after(250, lambda: setattr(self, 'dash_cooldown', False))
