@@ -14,6 +14,9 @@ class View(tk.Canvas):
 
         root.bind("<Button-1>", self.dash)
         root.bind("<Escape>", self.pause)
+        root.bind("b", self.boss)
+
+        self.boss_screen = None
 
         self.paused = False
 
@@ -71,6 +74,26 @@ class View(tk.Canvas):
 
     def test(self):
         pass
+
+    def boss(self, event=None):
+            if self.boss_screen == None:
+                self.pause()
+                boss_image = Image.open("images/boss_screen.png")
+                boss_image = boss_image.resize((self.width, self.height), Image.NEAREST)
+                self.boss_tk_image = ImageTk.PhotoImage(boss_image) 
+
+                # Add the boss screen to the canvas
+                self.boss_screen = self.create_image(
+                    0,
+                    0,
+                    image=self.boss_tk_image,
+                    anchor=tk.NW
+                )
+            else:
+                self.delete(self.boss_screen)
+                self.boss_screen = None
+
+
 
     def timer(self):
         if not self.paused:
