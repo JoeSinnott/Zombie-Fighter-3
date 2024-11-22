@@ -6,15 +6,15 @@ import json
 from entities import zombie, demon, character, capybara
 
 class View(tk.Canvas):
-    def __init__(self, root, name, width=1920, height=1080):
+    def __init__(self, root, name, dash_b, pause_b, boss_b, width=1920, height=1080):
         super().__init__(root, width=width, height=height)
         
         self.height = height
         self.width = width
 
-        root.bind("<Button-1>", self.dash)
-        root.bind("<Escape>", self.pause)
-        root.bind("b", self.boss)
+        root.bind(dash_b, self.dash)
+        root.bind(pause_b, self.pause)
+        root.bind(boss_b, self.boss)
 
         self.boss_screen = None
 
@@ -319,6 +319,11 @@ class Menu(tk.Canvas):
 
         self.name = ""
 
+        self.controls_menu = None
+        self.dash = "<Button-1>"
+        self.pause = "<Escape>"
+        self.boss = "b"
+
         # Load the background image and add it to the canvas
         bg_image = Image.open("images/bg_image.png")
         new_height = int(self.height)
@@ -336,7 +341,7 @@ class Menu(tk.Canvas):
         
         self.create_button("PLAY", lambda: self.name_entry(), round(self.width/4), round(0.55*self.height))
         self.create_button("RESUME", lambda: self.play(load=True), round(self.width/4), round(0.65*self.height))
-        self.create_button("CONTROLS", lambda: self.play(), round(self.width/4), round(0.75*self.height))
+        self.create_button("CONTROLS", lambda: self.change_controls(), round(self.width/4), round(0.75*self.height))
         
         self.display_leaderboard()
 
@@ -396,7 +401,8 @@ class Menu(tk.Canvas):
             root.unbind("<Key>")
             root.unbind("<BackSpace>")
             root.unbind("<Return>")
-            view = View(root, self.name, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
+            view = View(root, self.name, self.dash, self.pause, self.boss,
+                         width=root.winfo_screenwidth(), height=root.winfo_screenheight())
             view.pack()
             if load:
                 view.score = save.get("score", 0)
@@ -444,6 +450,65 @@ class Menu(tk.Canvas):
             0.5*self.width, 0.48*self.height,
             text=self.name, font=("Courier New", 70, "bold"), fill="white", anchor=tk.N
         )
+
+    def change_controls(self):
+        if self.controls_menu == None:
+            self.controls_menu = []
+
+            self.controls_menu.append(self.create_rectangle(
+                self.width*0.35, self.height*0.3,
+                self.width*0.65, self.height*0.7,
+                fill="grey", outline="black", width=7
+            ))
+            self.controls_menu.append(self.create_text(
+                0.5*self.width, 0.31*self.height,
+                text="Change controls:", font=("Courier New", 40, "bold"), fill="white", anchor=tk.N
+            ))
+            self.controls_menu.append(self.create_text(
+                0.36*self.width, 0.4*self.height,
+                text="Dash:", font=("Courier New", 40, "bold"), fill="white", anchor=tk.W
+            ))
+            self.controls_menu.append(self.create_text(
+                0.36*self.width, 0.5*self.height,
+                text="Pause:", font=("Courier New", 40, "bold"), fill="white", anchor=tk.W
+            ))
+            self.controls_menu.append(self.create_text(
+                0.36*self.width, 0.6*self.height,
+                text="Boss Screen:", font=("Courier New", 40, "bold"), fill="white", anchor=tk.W
+            ))
+            self.controls_menu.append(self.create_text(
+                0.64*self.width, 0.4*self.height,
+                tag="dash", text=self.dash, font=("Courier New", 40, "bold"), fill="white", anchor=tk.E
+            ))
+            self.controls_menu.append(self.create_text(
+                0.64*self.width, 0.5*self.height,
+                tag="pause", text=self.pause, font=("Courier New", 40, "bold"), fill="white", anchor=tk.E
+            ))
+            self.controls_menu.append(self.create_text(
+                0.64*self.width, 0.6*self.height,
+                tag="boss", text=self.boss, font=("Courier New", 40, "bold"), fill="white", anchor=tk.E
+            ))
+
+            self.tag_bind("dash", "<Button-1>", lambda event: root.bind("<Key>", lambda event: self.control_input(event, "dash")))
+            self.tag_bind("pause", "<Button-1>", lambda event: root.bind("<Key>", lambda event: self.control_input(event, "pause")))
+            self.tag_bind("boss", "<Button-1>", lambda event: root.bind("<Key>", lambda event: self.control_input(event, "boss")))
+
+
+        else: 
+            for part in self.controls_menu:
+                self.delete(part)
+            self.controls_menu = None
+        
+    def control_input(self, event, action):
+        key = event.keysym
+        if len(key) > 1:
+            setattr(self, action, f"<{key}>")
+        else:
+            setattr(self, action, key)
+        root.unbind("<Key>")
+        self.change_controls()
+        self.change_controls()
+    
 
 if __name__ == '__main__':
     root = tk.Tk()
