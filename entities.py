@@ -31,9 +31,9 @@ class zombie:
     def movement(self):
         # Move zombie towards centre of screen
         if self.x >= 0.5:
-            self.speed_x = -0.0004
+            self.speed_x = -0.0008
         else:
-            self.speed_x = 0.0004
+            self.speed_x = 0.0008
 
         self.x += self.speed_x
         self.y += self.speed_y
