@@ -10,7 +10,7 @@ class zombie:
     def __init__(self, canvas):
         self.canvas = canvas
         # Load and scale the zombie image
-        zombie_image = Image.open("comp16321-labs_y46354js/images/zombie.png")
+        zombie_image = Image.open("images/zombie.png")
         zombie_image = zombie_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(zombie_image.width * 5)
         new_height = int(zombie_image.height * 5)
@@ -46,7 +46,7 @@ class demon:
     def __init__(self, canvas):
         self.canvas = canvas
         # Load and scale the demon image
-        demon_image = Image.open("comp16321-labs_y46354js/images/demon.png")
+        demon_image = Image.open("images/demon.png")
         demon_image = demon_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(demon_image.width * 4)
         new_height = int(demon_image.height * 4)
@@ -102,7 +102,7 @@ class character:
         self.dashing = False
 
         # Load and scale the character image
-        character_image = Image.open("comp16321-labs_y46354js/images/character.png")
+        character_image = Image.open("images/character.png")
         character_image = character_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(character_image.width * 4)
         new_height = int(character_image.height * 4)
@@ -150,7 +150,7 @@ class capybara:
     def __init__(self, canvas):
         self.canvas = canvas
         # Load and scale the capybara image
-        capy_image = Image.open("comp16321-labs_y46354js/images/capy.png")
+        capy_image = Image.open("images/capy.png")
         capy_image = capy_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(capy_image.width * 4)
         new_height = int(capy_image.height * 4)

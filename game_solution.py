@@ -1,5 +1,7 @@
 import tkinter as tk
-from PIL import Image, ImageTk
+from tkinter import font as tkfont
+from PIL import Image, ImageTk, ImageFont
+import json
 
 from entities import zombie, demon, character, capybara
 
@@ -15,12 +17,15 @@ class View(tk.Canvas):
 
         self.paused = False
 
+        self.score = 0
+        self.time = 0
+
         # Zombie and demon lists
         self.zombies = []
         self.demons = []
 
         # Load and scale the game_over image
-        game_over_image = Image.open("comp16321-labs_y46354js/images/game_over.png")
+        game_over_image = Image.open("images/game_over.png")
         game_over_image = game_over_image.convert("RGBA")  # Ensure transparency is preserved
         new_width = int(game_over_image.width * 16)
         new_height = int(game_over_image.height * 16)
@@ -28,7 +33,7 @@ class View(tk.Canvas):
         self.game_over_tk_image = ImageTk.PhotoImage(game_over_image)
 
         # Load the background image and add it to the canvas
-        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.png")
+        bg_image = Image.open("images/bg_image.png")
         new_height = int(self.height)
         new_width = int(bg_image.width * (new_height/bg_image.height))
         bg_image = bg_image.resize((new_width,new_height), Image.NEAREST)
@@ -39,19 +44,62 @@ class View(tk.Canvas):
         self.capy = capybara(self)
         self.character = character(self)
 
+        self.timer_text = self.create_text(
+            0.3 * self.width,
+            0.05 * self.height,
+            text=f"{self.time}s", font=("Courier New", 60, "bold"), fill="red"
+        )
+
+        self.score_text = self.create_text(
+            0.5 * self.width,
+            0.05 * self.height,
+            text=str(self.score), font=("Courier New", 60, "bold"), fill="red"
+        )
+
 
     def test(self):
         pass
+
+    def timer(self):
+        if not self.paused:
+            self.time += 1
+            root.after(1000, self.timer)
 
     def set_up(self):
         self.spawn_zombie()
         self.spawn_demon()
 
+        self.timer()
+
         self.game_loop()
 
     def pause(self, event=None):
         self.paused = not self.paused
-        if not self.paused:
+        if self.paused == True:
+            self.save_button = []
+            # Define button properties
+            button_width, button_height = 200, 80
+            button_x, button_y = round(self.width/2), round(self.height/2)
+
+            # Bind the button area to the action
+            self.tag_bind("save", "<Button-1>", lambda event: self.to_menu("progress"))
+
+            self.save_button.append(self.create_rectangle(
+                button_x - button_width // 2, button_y - button_height // 2,
+                button_x + button_width // 2, button_y + button_height // 2,
+                tags="save",  # Assign a tag to group the button elements
+                fill="red", outline="black", width=7
+            ))
+
+            # Add text
+            self.save_button.append(self.create_text(
+                button_x, button_y,
+                tags="save", text="save", font=("Courier New", 40, "bold"), fill="white"
+            ))
+
+        elif self.paused == False:
+            for part in self.save_button:
+                self.delete(part)
             self.set_up()
 
     def game_loop(self, event=None):
@@ -84,8 +132,11 @@ class View(tk.Canvas):
         
         self.capy_collision()
 
-        if self.capy.health == 0 :
+        if self.capy.health <= 0 :
             self.game_over()
+
+        self.itemconfig(self.timer_text, text=f"{self.time}s")
+        self.itemconfig(self.score_text, text=str(self.score))
 
         # Call function every 20 ms
         if not self.paused:
@@ -103,12 +154,32 @@ class View(tk.Canvas):
             anchor=tk.CENTER
         )
 
-        root.after(5000, self.to_menu)
+        root.after(5000, lambda: self.to_menu("score"))
         
-    def to_menu(self):
+    def to_menu(self, option):
+        if option == "score":
+            self.save_score()
+        elif option == "progress":
+            self.save_progress()
         self.pack_forget()
         menu.pack()
         menu.update_idletasks()
+    
+    def save_score(self):
+        with open("leaderboard.json", "r") as file:
+            try:
+                leaderboard = json.load(file)
+            except (json.JSONDecodeError, FileNotFoundError):
+                leaderboard = []
+            leaderboard.append({"name": "Player1", "score": self.score})
+            leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:10]
+        with open("leaderboard.json", "w") as file:
+            json.dump(leaderboard, file)
+
+    def save_progress(self):
+        save = {"score": self.score, "time": self.time}
+        with open("save.json", "w") as file:
+            json.dump(save, file)
 
     def gravity(self, event=None):
         # Apply gravity to character
@@ -141,13 +212,19 @@ class View(tk.Canvas):
         # Add the zombie object to the zombie list
         if not self.paused:
             self.zombies.append(zombie(self))
-            root.after(1500, self.spawn_zombie)
 
-    def spawn_demon(self,event=None):
+            freq = round(2000/(0.01*self.time+1))
+
+            root.after(freq, self.spawn_zombie)
+
+    def spawn_demon(self, event=None):
         # Add the demon object to the zombie list
         if not self.paused:
             self.demons.append(demon(self))
-            root.after(2500, self.spawn_demon)
+
+            freq = round(2000/(0.01*self.time+1))
+
+            root.after(freq, self.spawn_demon)
     
     def mon_collision(self):
 
@@ -160,6 +237,7 @@ class View(tk.Canvas):
                     zom_bbox[3] < char_bbox[1] or   # zombie is above character
                     zom_bbox[1] > char_bbox[3]):    # zombie is below character
                 self.zombies.remove(zombie)
+                self.score += 10
 
         for demon in self.demons:
             dem_bbox = self.bbox(demon.image)
@@ -168,6 +246,7 @@ class View(tk.Canvas):
                     dem_bbox[3] < char_bbox[1] or   # demon is above character
                     dem_bbox[1] > char_bbox[3]):    # demon is below character
                 self.demons.remove(demon)
+                self.score += 10
 
     def capy_collision(self):
 
@@ -200,61 +279,69 @@ class Menu(tk.Canvas):
         self.width = width
 
         # Load the background image and add it to the canvas
-        bg_image = Image.open("comp16321-labs_y46354js/images/bg_image.png")
+        bg_image = Image.open("images/bg_image.png")
         new_height = int(self.height)
         new_width = int(bg_image.width * (new_height/bg_image.height))
         bg_image = bg_image.resize((new_width,new_height), Image.NEAREST)
         self.bg_tk_image = ImageTk.PhotoImage(bg_image)
         self.create_image(0, 0, anchor="nw", image=self.bg_tk_image)
 
-        logo_image = Image.open("comp16321-labs_y46354js/images/game_logo.png")
+        logo_image = Image.open("images/game_logo.png")
         new_height = int(logo_image.width * 6)
         new_width = int(logo_image.width * 6)
         logo_image = logo_image.resize((new_width,new_height), Image.NEAREST)
         self.logo_tk_image = ImageTk.PhotoImage(logo_image)
-        self.create_image(self.width*0.5, 0, anchor=tk.N, image=self.logo_tk_image)
+        self.create_image(self.width/4, 0, anchor=tk.N, image=self.logo_tk_image)
+        
+        self.create_button("PLAY", lambda: self.play(), round(self.width/4), round(0.6*self.height))
+        self.create_button("RESUME", lambda: self.play(load=True), round(self.width/4), round(0.7*self.height))
 
-        self.create_buttons()
 
-    def create_buttons(self):
+    def create_button(self, text, action, x, y):
         # Define button properties
         button_width, button_height = 200, 80
-        button_x, button_y = self.width // 2, round(0.6*self.height)
+        button_x, button_y = x, y
 
         # Bind the button area to the action
-        self.tag_bind("button", "<Button-1>", lambda event: self.play())
+        self.tag_bind(text, "<Button-1>", lambda event: action())
 
-        # Mark the rectangle and text as part of the button
         self.create_rectangle(
             button_x - button_width // 2, button_y - button_height // 2,
             button_x + button_width // 2, button_y + button_height // 2,
-            tags="button",  # Assign a tag to group the button elements
+            tags=text,  # Assign a tag to group the button elements
             fill="red", outline="black", width=7
         )
 
-        # Add pixelated text
+        # Add text
         self.create_text(
             button_x, button_y,
-            text="PLAY", font=("Terminal", 20, "bold"), fill="white"
+            tags=text, text=text, font=("Courier New", 40, "bold"), fill="white"
         )
 
-    def play(self):
+    def play(self, load=False):
         # Create the View instance
         global view
         view = View(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
         view.pack()
+        if load:
+            with open("save.json", "r") as file:
+                try:
+                    save = json.load(file)
+                except (json.JSONDecodeError, FileNotFoundError):
+                    save = {}
+            view.score = save.get("score", 0)
+            view.time = save.get("time", 0)
         view.set_up()
         self.pack_forget()
 
 
 if __name__ == '__main__':
-    view = None
-
     root = tk.Tk()
     root.geometry(f"{root.winfo_screenwidth()}x{root.winfo_screenheight()}")
     root.attributes('-fullscreen', True)
     root.resizable(False, False)
-    
+
+
     menu = Menu(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight())
     menu.pack()
 
